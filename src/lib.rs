@@ -1,17 +1,33 @@
 //! crate for working with Connectwise Manage API
+//!
+//! In the connectwise api <https://developer.connectwise.com/Products/Manage> some results are
+//! returned as a single 'object' and most are returned as a list.
+//! Normally you will be getting a list of results (even a list of one) so you would use [get].
+//! In some cases, (/system/info for example) it does not return a list, in this case use [get_single].
+//! Consult the api documentation (above) for more details.
+//!
+//! # Query examples
+//! See the connectwise api for further details
+//!
+//! - No query - `[("", "")]`
+//! - Only get the id field `[("fields", "id")]`
+//! - Also apply some conditions `[("fields", "id"), ("conditions", "name LIKE '%foo%'")]`
 use std::collections::HashMap;
 use url::Url;
 use serde_json::{Result, Value};
 
 // TODO make this config
+/// Do something
 const BASE_APIURL: &str = "na.myconnectwise.net";
 // TODO make this config
+/// Do something
 const CODEBASE: &str = "v2020_3";
 
 // *** Structs ***
 /// authentication credentials for the connectwise api
 /// * `company_id` is your _short name_ (ie the one you use to login to CW)
-/// * `public_key` and `private_key` are obtained by creating an api member with keys
+/// * `public_key` is obtained by creating an api member with keys
+/// * `private_key` is obtained by creating an api member with keys
 /// * the `client_id` is generated <https://developer.connectwise.com/ClientID>
 pub struct Credentials {
     pub company_id: &'static str,
@@ -55,7 +71,41 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 }
 
 // *** Public Functions ***
-pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Value> {
+/// GETs a path from the connectwise api.  `get_single` is only used on certain api endpoints.
+/// It is expecting the response from the connectwise api to be a single "object" and not a list
+/// like it normally returns
+///
+/// # Arguments
+///
+/// - `creds` - your connectwise [Credentials]
+/// - `path` - the api path you want to retrieve (example `/service/info`)
+/// - `query` - additional query options *must be set*.  If non, use [("", "")]
+///
+/// # Known Endpoints
+///
+/// - /system/info
+///
+/// # Example
+///
+/// ```
+/// use cwmanage::{get_single, Credentials};
+/// static TESTING_CREDS: Credentials = Credentials {
+///   # company_id:  "buscominctraining",
+///   // company_id: "YOURCOMPANY",
+///   # public_key: "qIos0KKmMgBOCd2q",
+///   // public_key: "YOURPUBLICKEY",
+///   # private_key: "tHtksPC80j3FG4df",
+///   // private_key: "YOURPRIVATEKEY",
+///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
+///   // client_id: "YOURCLIENTID",
+/// };
+/// let query = [("", "")];
+/// let path = "/system/info";
+/// let result = get_single(&TESTING_CREDS, &path, &query).unwrap();
+///
+/// assert_eq!(&result["isCloud"], true);
+/// ```
+pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Value> {
     let res = reqwest::blocking::Client::new()
         .get(&gen_api_url(path))
         .header("Authorization", gen_basic_auth(creds))
@@ -72,7 +122,38 @@ pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Resul
     Ok(v)
 }
 
-fn get_all(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Vec<Value>> {
+/// GETs a path from the connectwise api.  `get` will return *all* results so make sure you
+/// set your `query` with the appropriate conditions. This follows the api pagination so, again,
+/// *all* results will be returned  For example `/service/tickets` will
+/// return **ever** ticket in the system.  The result is a vec of
+/// [serde_json::value::Value](https://docs.serde.rs/serde_json/value/enum.Value.html)
+///
+/// # Arguments
+///
+/// - `creds` - your connectwise [Credentials]
+/// - `path` - the api path you want to retrieve (example `/service/tickets`)
+/// - `query` - additional query options *must be set*.  If non, use [("", "")]
+/// # Example
+///
+/// ```
+/// use cwmanage::{get, Credentials};
+/// static TESTING_CREDS: Credentials = Credentials {
+///   # company_id:  "buscominctraining",
+///   // company_id: "YOURCOMPANY",
+///   # public_key: "qIos0KKmMgBOCd2q",
+///   // public_key: "YOURPUBLICKEY",
+///   # private_key: "tHtksPC80j3FG4df",
+///   // private_key: "YOURPRIVATEKEY",
+///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
+///   // client_id: "YOURCLIENTID",
+/// };
+/// let query = [("fields", "id")];
+/// let path = "/system/members";
+/// let result = get(&TESTING_CREDS, &path, &query).unwrap();
+///
+/// assert!(result.len() > 30);
+/// ```
+pub fn get(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Vec<Value>> {
     let mut collected_res: Vec<Value> = Vec::new();
     let mut page: String = "1".to_string();
     let mut next: bool = true;
@@ -147,27 +228,26 @@ mod tests {
     }
 
     // TODO test a failure case
-
     #[test]
-    fn test_basic_get_one() {
+    fn test_basic_get_single() {
         let query = [];
-        let result = &get_one(&TESTING_CREDS, "/system/info", &query).unwrap();
+        let result = &get_single(&TESTING_CREDS, "/system/info", &query).unwrap();
         assert_eq!(&result["cloudRegion"], "NA");
         assert_eq!(&result["isCloud"], true);
         assert_eq!(&result["serverTimeZone"], "Eastern Standard Time");
     }
 
     #[test]
-    fn test_basic_get_all() {
-        // let query = [("fields", "id,identifier")];
+    fn test_basic_get() {
         let query = [];
-        let result = &get_all(&TESTING_CREDS, "/system/members", &query).unwrap();
+        let result = &get(&TESTING_CREDS, "/system/members", &query).unwrap();
 
-        assert!(&result.len() > &40);
+        assert!(result.len() > 40);
 
         let zach = &result[0];
         assert_eq!(&zach["adminFlag"], true);
         assert_eq!(&zach["dailyCapacity"], 8.0);
         assert_eq!(&zach["identifier"], "ZPeters");
     }
+
 }
