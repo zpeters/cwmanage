@@ -12,9 +12,9 @@
 //! - No query - `[("", "")]`
 //! - Only get the id field `[("fields", "id")]`
 //! - Also apply some conditions `[("fields", "id"), ("conditions", "name LIKE '%foo%'")]`
+use serde_json::{Result, Value};
 use std::collections::HashMap;
 use url::Url;
-use serde_json::{Result, Value};
 
 // TODO make this config
 /// Do something
@@ -87,6 +87,7 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 ///
 /// # Example
 ///
+/// ## Basic get, returning parsed json
 /// ```
 /// use cwmanage::{get_single, Credentials};
 /// static TESTING_CREDS: Credentials = Credentials {
@@ -104,6 +105,39 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 /// let result = get_single(&TESTING_CREDS, &path, &query).unwrap();
 ///
 /// assert_eq!(&result["isCloud"], true);
+/// ```
+/// ## Basic get, take parsed json and convert to a struct
+/// ```
+/// use cwmanage::{get_single, Credentials};
+/// use serde::{Deserialize};
+///
+/// #[derive(Debug, Deserialize)]
+/// #[serde(rename_all = "camelCase")]
+/// struct SystemInfo {
+///   version: String,
+///   is_cloud: bool,
+///   server_time_zone: String,
+/// }
+///
+/// static TESTING_CREDS: Credentials = Credentials {
+///   # company_id:  "buscominctraining",
+///   // company_id: "YOURCOMPANY",
+///   # public_key: "qIos0KKmMgBOCd2q",
+///   // public_key: "YOURPUBLICKEY",
+///   # private_key: "tHtksPC80j3FG4df",
+///   // private_key: "YOURPRIVATEKEY",
+///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
+///   // client_id: "YOURCLIENTID",
+/// };
+/// let query = [("", "")];
+/// let path = "/system/info";
+/// let result = get_single(&TESTING_CREDS, &path, &query).unwrap();
+///
+/// // got our result, just like before.
+/// // now convert it into our struct
+/// let info: SystemInfo = serde_json::from_value(result).unwrap();
+/// assert_eq!(info.is_cloud, true);
+/// assert_eq!(info.server_time_zone, "Eastern Standard Time");
 /// ```
 pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Value> {
     let res = reqwest::blocking::Client::new()
@@ -125,7 +159,7 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
 /// GETs a path from the connectwise api.  `get` will return *all* results so make sure you
 /// set your `query` with the appropriate conditions. This follows the api pagination so, again,
 /// *all* results will be returned  For example `/service/tickets` will
-/// return **ever** ticket in the system.  The result is a vec of
+/// return **every** ticket in the system.  The result is a vec of
 /// [serde_json::value::Value](https://docs.serde.rs/serde_json/value/enum.Value.html)
 ///
 /// # Arguments
@@ -135,6 +169,7 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
 /// - `query` - additional query options *must be set*.  If non, use [("", "")]
 /// # Example
 ///
+/// ## Getting all results, returning parsed json
 /// ```
 /// use cwmanage::{get, Credentials};
 /// static TESTING_CREDS: Credentials = Credentials {
@@ -153,6 +188,39 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
 ///
 /// assert!(result.len() > 30);
 /// ```
+/// ## Getting all results, take parsed json and convert to a struct
+/// ```
+/// use cwmanage::{get, Credentials};
+/// use serde::{Deserialize};
+/// use serde_json::Value::Array;
+///
+/// #[derive(Debug, Deserialize)]
+/// #[serde(rename_all = "camelCase")]
+/// struct Member {
+///   id: i32,
+///   identifier: String,
+/// }
+///
+/// static TESTING_CREDS: Credentials = Credentials {
+///   # company_id:  "buscominctraining",
+///   // company_id: "YOURCOMPANY",
+///   # public_key: "qIos0KKmMgBOCd2q",
+///   // public_key: "YOURPUBLICKEY",
+///   # private_key: "tHtksPC80j3FG4df",
+///   // private_key: "YOURPRIVATEKEY",
+///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
+///   // client_id: "YOURCLIENTID",
+/// };
+/// let query = [("", "")];
+/// let path = "/system/members";
+/// let result = get(&TESTING_CREDS, &path, &query).unwrap();
+///
+/// // got our result, just like before.
+/// // now convert it into our struct
+/// let members: Vec<Member>= serde_json::from_value(Array(result)).unwrap();
+/// assert_eq!(members.len(), 134);
+/// ```
+
 pub fn get(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Vec<Value>> {
     let mut collected_res: Vec<Value> = Vec::new();
     let mut page: String = "1".to_string();
@@ -227,7 +295,13 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // TODO test a failure case
+    #[test]
+    #[should_panic]
+    fn test_basic_get_panic() {
+        let query = [];
+        let _result = &get_single(&TESTING_CREDS, "/this/is/a/bad/path", &query).unwrap();
+    }
+
     #[test]
     fn test_basic_get_single() {
         let query = [];
@@ -249,5 +323,4 @@ mod tests {
         assert_eq!(&zach["dailyCapacity"], 8.0);
         assert_eq!(&zach["identifier"], "ZPeters");
     }
-
 }
