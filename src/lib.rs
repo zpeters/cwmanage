@@ -30,10 +30,10 @@ const CODEBASE: &str = "v2020_3";
 /// * `private_key` is obtained by creating an api member with keys
 /// * the `client_id` is generated <https://developer.connectwise.com/ClientID>
 pub struct Credentials {
-    pub company_id: &'static str,
-    pub public_key: &'static str,
-    pub private_key: &'static str,
-    pub client_id: &'static str,
+    pub company_id: String,
+    pub public_key: String,
+    pub private_key: String,
+    pub client_id: String,
 }
 // *** Private Functions ***
 fn gen_basic_auth(creds: &Credentials) -> String {
@@ -90,19 +90,25 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 /// ## Basic get, returning parsed json
 /// ```
 /// use cwmanage::{get_single, Credentials};
-/// static TESTING_CREDS: Credentials = Credentials {
-///   # company_id:  "buscominctraining",
-///   // company_id: "YOURCOMPANY",
-///   # public_key: "qIos0KKmMgBOCd2q",
-///   // public_key: "YOURPUBLICKEY",
-///   # private_key: "tHtksPC80j3FG4df",
-///   // private_key: "YOURPRIVATEKEY",
-///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
-///   // client_id: "YOURCLIENTID",
+///
+/// // this example is using dotenv to load our settings from
+/// // the environment, you could also specify this manually
+/// use dotenv::dotenv;
+/// dotenv().ok();
+/// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+/// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+/// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+/// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+/// let credentials = Credentials {
+///    company_id: company_id,
+///    public_key: public_key,
+///    private_key: private_key,
+///    client_id: client_id,
 /// };
+///
 /// let query = [("", "")];
 /// let path = "/system/info";
-/// let result = get_single(&TESTING_CREDS, &path, &query).unwrap();
+/// let result = get_single(&credentials, &path, &query).unwrap();
 ///
 /// assert_eq!(&result["isCloud"], true);
 /// ```
@@ -119,19 +125,24 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 ///   server_time_zone: String,
 /// }
 ///
-/// static TESTING_CREDS: Credentials = Credentials {
-///   # company_id:  "buscominctraining",
-///   // company_id: "YOURCOMPANY",
-///   # public_key: "qIos0KKmMgBOCd2q",
-///   // public_key: "YOURPUBLICKEY",
-///   # private_key: "tHtksPC80j3FG4df",
-///   // private_key: "YOURPRIVATEKEY",
-///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
-///   // client_id: "YOURCLIENTID",
+/// // this example is using dotenv to load our settings from
+/// // the environment, you could also specify this manually
+/// use dotenv::dotenv;
+/// dotenv().ok();
+/// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+/// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+/// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+/// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+/// let credentials = Credentials {
+///    company_id: company_id,
+///    public_key: public_key,
+///    private_key: private_key,
+///    client_id: client_id,
 /// };
+///
 /// let query = [("", "")];
 /// let path = "/system/info";
-/// let result = get_single(&TESTING_CREDS, &path, &query).unwrap();
+/// let result = get_single(&credentials, &path, &query).unwrap();
 ///
 /// // got our result, just like before.
 /// // now convert it into our struct
@@ -144,7 +155,7 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
         .get(&gen_api_url(path))
         .header("Authorization", gen_basic_auth(creds))
         .header("Content-Type", "application/json")
-        .header("clientid", creds.client_id)
+        .header("clientid", &creds.client_id)
         .header("pagination-type", "forward-only")
         .query(&query)
         .send()
@@ -172,19 +183,25 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
 /// ## Getting all results, returning parsed json
 /// ```
 /// use cwmanage::{get, Credentials};
-/// static TESTING_CREDS: Credentials = Credentials {
-///   # company_id:  "buscominctraining",
-///   // company_id: "YOURCOMPANY",
-///   # public_key: "qIos0KKmMgBOCd2q",
-///   // public_key: "YOURPUBLICKEY",
-///   # private_key: "tHtksPC80j3FG4df",
-///   // private_key: "YOURPRIVATEKEY",
-///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
-///   // client_id: "YOURCLIENTID",
+///
+/// // this example is using dotenv to load our settings from
+/// // the environment, you could also specify this manually
+/// use dotenv::dotenv;
+/// dotenv().ok();
+/// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+/// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+/// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+/// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+/// let credentials = Credentials {
+///    company_id: company_id,
+///    public_key: public_key,
+///    private_key: private_key,
+///    client_id: client_id,
 /// };
+///
 /// let query = [("fields", "id")];
 /// let path = "/system/members";
-/// let result = get(&TESTING_CREDS, &path, &query).unwrap();
+/// let result = get(&credentials, &path, &query).unwrap();
 ///
 /// assert!(result.len() > 30);
 /// ```
@@ -201,19 +218,24 @@ pub fn get_single(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Re
 ///   identifier: String,
 /// }
 ///
-/// static TESTING_CREDS: Credentials = Credentials {
-///   # company_id:  "buscominctraining",
-///   // company_id: "YOURCOMPANY",
-///   # public_key: "qIos0KKmMgBOCd2q",
-///   // public_key: "YOURPUBLICKEY",
-///   # private_key: "tHtksPC80j3FG4df",
-///   // private_key: "YOURPRIVATEKEY",
-///   # client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
-///   // client_id: "YOURCLIENTID",
+/// // this example is using dotenv to load our settings from
+/// // the environment, you could also specify this manually
+/// use dotenv::dotenv;
+/// dotenv().ok();
+/// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+/// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+/// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+/// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+/// let credentials = Credentials {
+///    company_id: company_id,
+///    public_key: public_key,
+///    private_key: private_key,
+///    client_id: client_id,
 /// };
+///
 /// let query = [("", "")];
 /// let path = "/system/members";
-/// let result = get(&TESTING_CREDS, &path, &query).unwrap();
+/// let result = get(&credentials, &path, &query).unwrap();
 ///
 /// // got our result, just like before.
 /// // now convert it into our struct
@@ -231,7 +253,7 @@ pub fn get(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Ve
             .get(&gen_api_url(path))
             .header("Authorization", gen_basic_auth(creds))
             .header("Content-Type", "application/json")
-            .header("clientid", creds.client_id)
+            .header("clientid", &creds.client_id)
             .header("pagination-type", "forward-only")
             .query(&[("pageid", &page)])
             .query(&query)
@@ -264,24 +286,32 @@ pub fn get(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Ve
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dotenv::dotenv;
 
-    // TODO definitely need to do something here
-    // dotenv?
-    static TESTING_CREDS: Credentials = Credentials {
-        company_id: "buscominctraining",
-        public_key: "qIos0KKmMgBOCd2q",
-        private_key: "tHtksPC80j3FG4df",
-        client_id: "a089ca10-d6ea-461a-a274-cf3c1177bde8",
-    };
+    fn get_credentials() -> Credentials {
+        dotenv().ok();
+
+        let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+        let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+        let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+        let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+
+        Credentials {
+            company_id: company_id,
+            public_key: public_key,
+            private_key: private_key,
+            client_id: client_id,
+        }
+    }
 
     #[test]
     fn test_basic_auth() {
         let expected: String = "Basic bXljbytwdWI6cHJpdg==".to_string();
         let c: Credentials = Credentials {
-            company_id: "myco",
-            public_key: "pub",
-            private_key: "priv",
-            client_id: "something",
+            company_id: "myco".to_string(),
+            public_key: "pub".to_string(),
+            private_key: "priv".to_string(),
+            client_id: "something".to_string(),
         };
         let result = gen_basic_auth(&c);
         assert_eq!(result, expected);
@@ -299,13 +329,13 @@ mod tests {
     #[should_panic]
     fn test_basic_get_panic() {
         let query = [];
-        let _result = &get_single(&TESTING_CREDS, "/this/is/a/bad/path", &query).unwrap();
+        let _result = &get_single(&get_credentials(), "/this/is/a/bad/path", &query).unwrap();
     }
 
     #[test]
     fn test_basic_get_single() {
         let query = [];
-        let result = &get_single(&TESTING_CREDS, "/system/info", &query).unwrap();
+        let result = &get_single(&get_credentials(), "/system/info", &query).unwrap();
         assert_eq!(&result["cloudRegion"], "NA");
         assert_eq!(&result["isCloud"], true);
         assert_eq!(&result["serverTimeZone"], "Eastern Standard Time");
@@ -314,7 +344,7 @@ mod tests {
     #[test]
     fn test_basic_get() {
         let query = [];
-        let result = &get(&TESTING_CREDS, "/system/members", &query).unwrap();
+        let result = &get(&get_credentials(), "/system/members", &query).unwrap();
 
         assert!(result.len() > 40);
 
