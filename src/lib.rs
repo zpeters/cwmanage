@@ -1,6 +1,7 @@
 //! crate for working with Connectwise Manage API
 use std::collections::HashMap;
 use url::Url;
+use serde_json::{Result, Value};
 
 // TODO make this config
 const BASE_APIURL: &str = "na.myconnectwise.net";
@@ -54,7 +55,7 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 }
 
 // *** Public Functions ***
-pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> String {
+pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Value> {
     let res = reqwest::blocking::Client::new()
         .get(&gen_api_url(path))
         .header("Authorization", gen_basic_auth(creds))
@@ -63,13 +64,16 @@ pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Strin
         .header("pagination-type", "forward-only")
         .query(&query)
         .send()
+        .unwrap()
+        .text()
         .unwrap();
 
-    res.text().unwrap()
+    let v: Value = serde_json::from_str(&res).unwrap();
+    Ok(v)
 }
 
-fn get_all(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Vec<String> {
-    let mut all_results: Vec<String> = Vec::new();
+fn get_all(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Result<Vec<Value>> {
+    let mut collected_res: Vec<Value> = Vec::new();
     let mut page: String = "1".to_string();
     let mut next: bool = true;
 
@@ -100,9 +104,11 @@ fn get_all(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Vec<Strin
         };
 
         let body = res.text().unwrap();
-        all_results.push(body);
+        let mut v: Vec<Value> = serde_json::from_str(&body).unwrap();
+        collected_res.append(&mut v);
     }
-    all_results
+
+    Ok(collected_res)
 }
 
 // *** Tests ***
@@ -140,22 +146,28 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // TODO eventually we need a better test here
+    // TODO test a failure case
+
     #[test]
     fn test_basic_get_one() {
         let query = [];
-        let result = &get_one(&TESTING_CREDS, "/system/info", &query);
-        assert!(&result.contains("version"));
-        assert!(&result.contains("isCloud"));
-        assert!(&result.contains("licenseBits"));
+        let result = &get_one(&TESTING_CREDS, "/system/info", &query).unwrap();
+        assert_eq!(&result["cloudRegion"], "NA");
+        assert_eq!(&result["isCloud"], true);
+        assert_eq!(&result["serverTimeZone"], "Eastern Standard Time");
     }
 
-    // TODO eventually we need a better test here
     #[test]
     fn test_basic_get_all() {
+        // let query = [("fields", "id,identifier")];
         let query = [];
-        let result = &get_all(&TESTING_CREDS, "/system/members", &query);
-        // for now we are just confirming we got multiple 'pages'
-        assert!(&result.len() > &5);
+        let result = &get_all(&TESTING_CREDS, "/system/members", &query).unwrap();
+
+        assert!(&result.len() > &40);
+
+        let zach = &result[0];
+        assert_eq!(&zach["adminFlag"], true);
+        assert_eq!(&zach["dailyCapacity"], 8.0);
+        assert_eq!(&zach["identifier"], "ZPeters");
     }
 }
