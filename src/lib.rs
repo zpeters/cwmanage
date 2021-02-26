@@ -53,7 +53,6 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
     }
 }
 
-
 // *** Public Functions ***
 pub fn get_one(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> String {
     let res = reqwest::blocking::Client::new()
@@ -105,8 +104,6 @@ fn get_all(creds: &Credentials, path: &str, query: &[(&str, &str)]) -> Vec<Strin
     }
     all_results
 }
-
-
 
 // *** Tests ***
 #[cfg(test)]
@@ -161,5 +158,4 @@ mod tests {
         // for now we are just confirming we got multiple 'pages'
         assert!(&result.len() > &5);
     }
-
 }
