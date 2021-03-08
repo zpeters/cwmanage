@@ -16,12 +16,16 @@ use serde_json::{Result, Value};
 use std::collections::HashMap;
 use url::Url;
 
+// TODO get from env
+// TODO fallback urls
+// TODO document them
 // TODO make this config
+// TODO consider using the builder pattern to add api url, keys , etc
 /// Do something
 const BASE_APIURL: &str = "na.myconnectwise.net";
 // TODO make this config
 /// Do something
-const CODEBASE: &str = "v2020_3";
+const CODEBASE: &str = "v2020_4/apis/3.0";
 
 // *** Structs ***
 /// authentication credentials for the connectwise api
@@ -46,7 +50,7 @@ fn gen_basic_auth(creds: &Credentials) -> String {
 }
 
 fn gen_api_url(path: &str) -> String {
-    format!("https://{}/{}/apis/3.0{}", BASE_APIURL, CODEBASE, path)
+    format!("https://{}/{}{}", BASE_APIURL, CODEBASE, path)
 }
 
 fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
@@ -320,7 +324,7 @@ mod tests {
 
     #[test]
     fn test_gen_url() {
-        let expected = "https://na.myconnectwise.net/v2020_3/apis/3.0/system/info";
+        let expected = "https://na.myconnectwise.net/v2020_4/apis/3.0/system/info";
         let path = "/system/info";
         let result = gen_api_url(path);
         assert_eq!(result, expected);
