@@ -29,6 +29,7 @@ const CODEBASE: &str = "v2020_3";
 /// * `public_key` is obtained by creating an api member with keys
 /// * `private_key` is obtained by creating an api member with keys
 /// * the `client_id` is generated <https://developer.connectwise.com/ClientID>
+#[derive(Debug)]
 pub struct Credentials {
     pub company_id: String,
     pub public_key: String,
