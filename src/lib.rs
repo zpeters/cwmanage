@@ -366,12 +366,29 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
 
-    // TODO create a function to generate a test client
+    fn testing_client() -> Client {
+        dotenv().ok();
+        let company_id: String =
+            dotenv::var("CWMANAGE_COMPANY_ID").expect("CWMANAGE_COMPANY_ID needs to be set");
+        let public_key: String =
+            dotenv::var("CWMANAGE_PUBLIC_KEY").expect("CWMANAGE_PUBLIC_KEY needs to be set");
+        let private_key: String =
+            dotenv::var("CWMANAGE_PRIVATE_KEY").expect("CWMANAGE_PRIVATE_KEY needs to be set");
+        let client_id: String =
+            dotenv::var("CWMANAGE_CLIENT_ID").expect("CWMANAGE_CLIENT_ID needs to be set");
+        Client::new(company_id, public_key, private_key, client_id).build()
+    }
 
     #[test]
     fn test_basic_auth() {
         let expected: String = "Basic bXljbytwdWI6cHJpdg==".to_string();
-        let client = Client::new("myco", "pub", "priv", "something").build();
+        let client = Client::new(
+            String::from("myco"),
+            String::from("pub"),
+            String::from("priv"),
+            String::from("something"),
+        )
+        .build();
         let result = client.gen_basic_auth();
         assert_eq!(result, expected);
     }
@@ -379,7 +396,13 @@ mod tests {
     #[test]
     fn test_gen_url() {
         let expected = "https://na.myconnectwise.net/v4_6_release/apis/3.0/system/info";
-        let client = Client::new("myco", "pub", "priv", "something").build();
+        let client = Client::new(
+            String::from("myco"),
+            String::from("pub"),
+            String::from("priv"),
+            String::from("something"),
+        )
+        .build();
         let result = client.gen_api_url("/system/info");
         assert_eq!(result, expected);
     }
@@ -387,32 +410,17 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_basic_get_panic() {
-        dotenv().ok();
-        let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
-        let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
-        let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
-        let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-
         let query = [];
-
-        let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
-
-        let _result = client.get_single("/this/is/a/bad/path", &query).unwrap();
+        let _result = testing_client()
+            .get_single("/this/is/a/bad/path", &query)
+            .unwrap();
     }
 
     #[test]
     fn test_basic_get_single() {
-        dotenv().ok();
-        let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
-        let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
-        let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
-        let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-
         let query = [];
 
-        let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
-
-        let result = client.get_single("/system/info", &query).unwrap();
+        let result = testing_client().get_single("/system/info", &query).unwrap();
         assert_eq!(&result["cloudRegion"], "NA");
         assert_eq!(&result["isCloud"], true);
         assert_eq!(&result["serverTimeZone"], "Eastern Standard Time");
@@ -420,17 +428,9 @@ mod tests {
 
     #[test]
     fn test_basic_get() {
-        dotenv().ok();
-        let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
-        let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
-        let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
-        let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-
         let query = [];
 
-        let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
-
-        let result = client.get("/system/members", &query).unwrap();
+        let result = testing_client().get("/system/members", &query).unwrap();
 
         assert!(result.len() > 40);
 
