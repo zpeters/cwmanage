@@ -1,6 +1,6 @@
 [package]
 name = "cwmanage"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Zach Peters <zpeters@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -15,9 +15,9 @@ keywords = ["learning", "connectwise"]
 
 [dependencies]
 base64 = "0.13.0"
-reqwest = {"version" = "0.11.1", "features" = ["blocking"]}
-serde = {"version" = "1.0.123", "features"=["derive"]}
-serde_json = "1.0.63"
+reqwest = { "version" = "0.11.1", "features" = ["blocking"] }
+serde = { "version" = "1.0.124", "features" = ["derive"] }
+serde_json = "1.0.64"
 url = "2.2.1"
 
 [dev-dependencies]
