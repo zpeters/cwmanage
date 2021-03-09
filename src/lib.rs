@@ -17,7 +17,7 @@
 //! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
 //! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
 //! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+//! let client = Client::new(company_id, public_key, private_key, client_id).build();
 //! let query = [("", "")];
 //! let result = client.get_single("/system/info", &query).unwrap();
 //! ```
@@ -31,7 +31,7 @@
 //! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
 //! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
 //!
-//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+//! let client = Client::new(company_id, public_key, private_key, client_id).build();
 //! let query = [("", "")];
 //! let result = client.get_single("/system/info", &query).unwrap();
 //! ```
@@ -45,9 +45,9 @@
 //! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
 //! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
 //! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
-//! let query = [("pagesize", "100")]
-//! let result = client.get("/service/tickets", &query).unwrap();
+//! let client = Client::new(company_id, public_key, private_key, client_id).build();
+//! let query = [("fields", "id,identifier")];
+//! let result = client.get("/system/members", &query);
 //! ```
 //!
 //! # Query examples
@@ -172,7 +172,7 @@ impl<'a> Client<'a> {
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
     ///
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/info";
@@ -202,7 +202,7 @@ impl<'a> Client<'a> {
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
     ///
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/info";
@@ -254,7 +254,7 @@ impl<'a> Client<'a> {
     /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
     ///
     /// let query = [("fields", "id")];
     /// let path = "/system/members";
@@ -283,7 +283,7 @@ impl<'a> Client<'a> {
     /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/members";
