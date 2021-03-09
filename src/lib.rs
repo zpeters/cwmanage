@@ -2,9 +2,29 @@
 //!
 //! In the connectwise api <https://developer.connectwise.com/Products/Manage> some results are
 //! returned as a single 'object' and most are returned as a list.
-//! Normally you will be getting a list of results (even a list of one) so you would use [get].
-//! In some cases, (/system/info for example) it does not return a list, in this case use [get_single].
+//! Normally you will be getting a list of results (even a list of one) so you would use [Client.get].
+//! In some cases, (/system/info for example) it does not return a list, in this case use [Client.get_single].
 //! Consult the api documentation (above) for more details.
+//!
+//! # Basic usage
+//!
+//! Basic client with default api_uri, codebase, and api version
+//! ```
+//! let client = Client::new("company_id", "public_key", "private_key", "client_id").build();
+//! let query = [("", "")]
+//! let result = client.get_single("/system/info", query).unwrap();
+//! ```
+//! Override the api_version
+//! ```
+//! let client = Client::new("company_id", "public_key", "private_key", "client_id").api_version("2020_4").build();
+//! let query = [("", "")]
+//! let result = client.get_single("/system/info", query).unwrap();
+//! ```
+//!
+//! Get an endpoint with multiple results
+//! let client = Client::new("company_id", "public_key", "private_key", "client_id").build();
+//! let query = [("pagesize", "100")]
+//! let result = client.get("/service/tickets", queryh).unwrap();
 //!
 //! # Query examples
 //! See the connectwise api for further details
@@ -44,8 +64,11 @@ impl<'a> Client<'a> {
             public_key,
             private_key,
             client_id,
+            // TODO convert to const and document
             api_url: "na.myconnectwise.net",
+            // TODO convert to const and document
             codebase: "v4_6_release",
+            // TODO convert to const and document
             api_version: "3.0",
         }
     }
@@ -116,7 +139,7 @@ impl<'a> Client<'a> {
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
     ///
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id);
+    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/info";
@@ -146,7 +169,7 @@ impl<'a> Client<'a> {
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
     ///
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id);
+    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/info";
@@ -182,7 +205,6 @@ impl<'a> Client<'a> {
     ///
     /// # Arguments
     ///
-    /// - `creds` - your connectwise [Credentials]
     /// - `path` - the api path you want to retrieve (example `/service/tickets`)
     /// - `query` - additional query options *must be set*.  If non, use [("", "")]
     /// # Example
@@ -199,7 +221,7 @@ impl<'a> Client<'a> {
     /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id);
+    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
     ///
     /// let query = [("fields", "id")];
     /// let path = "/system/members";
@@ -228,7 +250,7 @@ impl<'a> Client<'a> {
     /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
     /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
     /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
-    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id);
+    /// let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
     ///
     /// let query = [("", "")];
     /// let path = "/system/members";
