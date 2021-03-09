@@ -79,55 +79,55 @@ pub const DEFAULT_API_VERSION: &str = "3.0";
 /// * `private_key` is obtained by creating an api member with keys
 /// * the `client_id` is generated <https://developer.connectwise.com/ClientID>
 #[derive(Debug, PartialEq)]
-pub struct Client<'a> {
-    company_id: &'a str,
-    public_key: &'a str,
-    private_key: &'a str,
-    client_id: &'a str,
-    api_url: &'a str,
-    codebase: &'a str,
-    api_version: &'a str,
+pub struct Client {
+    company_id: String,
+    public_key: String,
+    private_key: String,
+    client_id: String,
+    api_url: String,
+    codebase: String,
+    api_version: String,
 }
-impl<'a> Client<'a> {
+impl Client {
     pub fn new(
-        company_id: &'a str,
-        public_key: &'a str,
-        private_key: &'a str,
-        client_id: &'a str,
-    ) -> Client<'a> {
+        company_id: String,
+        public_key: String,
+        private_key: String,
+        client_id: String,
+    ) -> Client {
         Client {
             company_id,
             public_key,
             private_key,
             client_id,
-            api_url: DEFAULT_API_URL,
-            codebase: DEFAULT_API_CODEBASE,
-            api_version: DEFAULT_API_VERSION,
+            api_url: DEFAULT_API_URL.to_string(),
+            codebase: DEFAULT_API_CODEBASE.to_string(),
+            api_version: DEFAULT_API_VERSION.to_string(),
         }
     }
-    pub fn build(&self) -> Client<'a> {
+    pub fn build(&self) -> Client {
         Client {
-            company_id: self.company_id,
-            public_key: self.public_key,
-            private_key: self.private_key,
-            client_id: self.client_id,
-            api_url: self.api_url,
-            codebase: self.codebase,
-            api_version: self.api_version,
+            company_id: self.company_id.to_owned(),
+            public_key: self.public_key.to_owned(),
+            private_key: self.private_key.to_owned(),
+            client_id: self.client_id.to_owned(),
+            api_url: self.api_url.to_owned(),
+            codebase: self.codebase.to_owned(),
+            api_version: self.api_version.to_owned(),
         }
     }
 
-    pub fn api_version(mut self, api_version: &'a str) -> Client {
+    pub fn api_version(mut self, api_version: String) -> Client {
         self.api_version = api_version;
         self
     }
 
-    pub fn api_url(mut self, api_url: &'a str) -> Client {
+    pub fn api_url(mut self, api_url: String) -> Client {
         self.api_url = api_url;
         self
     }
 
-    pub fn codebase(mut self, codebase: &'a str) -> Client {
+    pub fn codebase(mut self, codebase: String) -> Client {
         self.codebase = codebase;
         self
     }
