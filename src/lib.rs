@@ -10,21 +10,45 @@
 //!
 //! Basic client with default api_uri, codebase, and api version
 //! ```
-//! let client = Client::new("company_id", "public_key", "private_key", "client_id").build();
-//! let query = [("", "")]
-//! let result = client.get_single("/system/info", query).unwrap();
+//! use cwmanage::Client;
+//! use dotenv::dotenv;
+//! dotenv().ok();
+//! let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+//! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+//! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+//! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+//! let query = [("", "")];
+//! let result = client.get_single("/system/info", &query).unwrap();
 //! ```
 //! Override the api_version
 //! ```
-//! let client = Client::new("company_id", "public_key", "private_key", "client_id").api_version("2020_4").build();
-//! let query = [("", "")]
-//! let result = client.get_single("/system/info", query).unwrap();
+//! use cwmanage::Client;
+//! use dotenv::dotenv;
+//! dotenv().ok();
+//! let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+//! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+//! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+//! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+//!
+//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
+//! let query = [("", "")];
+//! let result = client.get_single("/system/info", &query).unwrap();
 //! ```
 //!
 //! Get an endpoint with multiple results
-//! let client = Client::new("company_id", "public_key", "private_key", "client_id").build();
+//! ```
+//! use cwmanage::Client;
+//! use dotenv::dotenv;
+//! dotenv().ok();
+//! let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+//! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+//! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+//! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+//! let client = Client::new(&company_id, &public_key, &private_key, &client_id).build();
 //! let query = [("pagesize", "100")]
-//! let result = client.get("/service/tickets", queryh).unwrap();
+//! let result = client.get("/service/tickets", &query).unwrap();
+//! ```
 //!
 //! # Query examples
 //! See the connectwise api for further details
@@ -36,8 +60,20 @@ use serde_json::{Result, Value};
 use std::collections::HashMap;
 use url::Url;
 
-// *** Structs ***
-/// authentication credentials for the connectwise api
+/// Default api url.  NA for north america.  Adjust to your cloud instance or local instance. See [Client] for how to customize
+pub const DEFAULT_API_URL: &str = "na.myconnectwise.net";
+
+/// This is the release version specified in the documentation.  
+/// There is a way to dynamically look up your api version.  This
+/// might be added in the future. See [Client] for how to customize
+pub const DEFAULT_API_CODEBASE: &str = "v4_6_release";
+
+/// I cannot find documentation on this , but since it is a number
+/// it is customizable. See [Client] for how to customize
+pub const DEFAULT_API_VERSION: &str = "3.0";
+
+/// Connectwise client.  Initinitialize with [Client::new].  Use [Client::api_url],
+/// [Client::api_version] and [Client::codebase] to customize.  The finalize with [Client::build]
 /// * `company_id` is your _short name_ (ie the one you use to login to CW)
 /// * `public_key` is obtained by creating an api member with keys
 /// * `private_key` is obtained by creating an api member with keys
@@ -64,12 +100,9 @@ impl<'a> Client<'a> {
             public_key,
             private_key,
             client_id,
-            // TODO convert to const and document
-            api_url: "na.myconnectwise.net",
-            // TODO convert to const and document
-            codebase: "v4_6_release",
-            // TODO convert to const and document
-            api_version: "3.0",
+            api_url: DEFAULT_API_URL,
+            codebase: DEFAULT_API_CODEBASE,
+            api_version: DEFAULT_API_VERSION,
         }
     }
     pub fn build(&self) -> Client<'a> {
