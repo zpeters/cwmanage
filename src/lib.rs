@@ -1,3 +1,4 @@
+#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 //! crate for working with Connectwise Manage API
 //!
 //! In the connectwise api <https://developer.connectwise.com/Products/Manage> some results are
@@ -89,6 +90,7 @@ pub struct Client {
     api_version: String,
 }
 impl Client {
+    /// Creates a new client using the default values
     pub fn new(
         company_id: String,
         public_key: String,
@@ -105,6 +107,7 @@ impl Client {
             api_version: DEFAULT_API_VERSION.to_string(),
         }
     }
+    /// Builds (finalizes the client)
     pub fn build(&self) -> Client {
         Client {
             company_id: self.company_id.to_owned(),
@@ -117,16 +120,19 @@ impl Client {
         }
     }
 
+    /// overrides the default api_version
     pub fn api_version(mut self, api_version: String) -> Client {
         self.api_version = api_version;
         self
     }
 
+    /// overrides the default api_url
     pub fn api_url(mut self, api_url: String) -> Client {
         self.api_url = api_url;
         self
     }
 
+    /// overrides the default codebase
     pub fn codebase(mut self, codebase: String) -> Client {
         self.codebase = codebase;
         self
