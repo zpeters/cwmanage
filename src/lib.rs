@@ -442,19 +442,19 @@ mod tests {
 
     #[test]
     fn test_new_client_default() {
-        let input_company_id = "myco";
-        let input_public_key = "public";
-        let input_private_key = "private";
-        let input_client_id = "clientid";
+        let input_company_id = "myco".to_string();
+        let input_public_key = "public".to_string();
+        let input_private_key = "private".to_string();
+        let input_client_id = "clientid".to_string();
 
         let expected = Client {
-            company_id: "myco",
-            public_key: "public",
-            private_key: "private",
-            client_id: "clientid",
-            api_version: "3.0",
-            api_url: "na.myconnectwise.net",
-            codebase: "v4_6_release",
+            company_id: "myco".to_string(),
+            public_key: "public".to_string(),
+            private_key: "private".to_string(),
+            client_id: "clientid".to_string(),
+            api_version: "3.0".to_string(),
+            api_url: "na.myconnectwise.net".to_string(),
+            codebase: "v4_6_release".to_string(),
         };
 
         let result = Client::new(
@@ -470,11 +470,13 @@ mod tests {
 
     #[test]
     fn test_new_client_api_version() {
-        let input_company_id = "myco";
-        let input_public_key = "public";
-        let input_private_key = "private";
-        let input_client_id = "clientid";
-        let input_api_version = "api";
+        let input_company_id = "myco".to_string();
+        let input_public_key = "public".to_string();
+        let input_private_key = "private".to_string();
+        let input_client_id = "clientid".to_string();
+        let input_api_version = "version".to_string();
+
+        let expected_api_version = "version";
 
         let result = Client::new(
             input_company_id,
@@ -482,39 +484,21 @@ mod tests {
             input_private_key,
             input_client_id,
         )
-        .api_version(&input_api_version)
+        .api_version(input_api_version)
         .build();
 
-        assert_eq!(result.api_version, input_api_version);
-    }
-
-    #[test]
-    fn test_new_client_api_url() {
-        let input_company_id = "myco";
-        let input_public_key = "public";
-        let input_private_key = "private";
-        let input_client_id = "clientid";
-        let input_api_url = "mybase";
-
-        let result = Client::new(
-            input_company_id,
-            input_public_key,
-            input_private_key,
-            input_client_id,
-        )
-        .api_url(&input_api_url)
-        .build();
-
-        assert_eq!(result.api_url, input_api_url);
+        assert_eq!(result.api_version, expected_api_version);
     }
 
     #[test]
     fn test_new_client_codebase() {
-        let input_company_id = "myco";
-        let input_public_key = "public";
-        let input_private_key = "private";
-        let input_client_id = "clientid";
-        let input_codebase = "codebase";
+        let input_company_id = "myco".to_string();
+        let input_public_key = "public".to_string();
+        let input_private_key = "private".to_string();
+        let input_client_id = "clientid".to_string();
+        let input_codebase = "codebase".to_string();
+
+        let expected_codebase = "codebase";
 
         let result = Client::new(
             input_company_id,
@@ -522,32 +506,25 @@ mod tests {
             input_private_key,
             input_client_id,
         )
-        .codebase(&input_codebase)
+        .codebase(input_codebase)
         .build();
 
-        assert_eq!(result.codebase, input_codebase);
+        assert_eq!(result.codebase, expected_codebase);
     }
 
     #[test]
     fn test_new_client_chained_options() {
-        let input_company_id = "myco";
-        let input_public_key = "public";
-        let input_private_key = "private";
-        let input_client_id = "clientid";
-        let input_api_url = "api";
-        let input_codebase = "codebase";
-
         let result = Client::new(
-            input_company_id,
-            input_public_key,
-            input_private_key,
-            input_client_id,
+            "myco".to_string(),
+            "public".to_string(),
+            "private".to_string(),
+            "clientid".to_string(),
         )
-        .codebase(&input_codebase)
-        .api_url(&input_api_url)
+        .codebase("codebase".to_string())
+        .api_url("api".to_string())
         .build();
 
-        assert_eq!(result.api_url, input_api_url);
-        assert_eq!(result.codebase, input_codebase);
+        assert_eq!(result.api_url, "api".to_string());
+        assert_eq!(result.codebase, "codebase".to_string());
     }
 }
