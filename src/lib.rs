@@ -51,13 +51,29 @@
 //! let result = client.get("/system/members", &query);
 //! ```
 //!
+//! # Post Example
+//! ```
+//! use cwmanage::Client;
+//! use serde_json::json;
+//! use dotenv::dotenv;
+//! dotenv().ok();
+//! let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+//! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+//! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+//! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+//! let client = Client::new(company_id, public_key, private_key, client_id).build();
+//! let body = json!({"foo": "bar"}).to_string();
+//! let result = client.post("/system/members", body);
+//! ```
+//!
 //! # Query examples
 //! See the connectwise api for further details
 //!
 //! - No query - `[("", "")]`
 //! - Only get the id field `[("fields", "id")]`
 //! - Also apply some conditions `[("fields", "id"), ("conditions", "name LIKE '%foo%'")]`
-use serde_json::{Result, Value};
+use anyhow::{anyhow, Result};
+use serde_json::Value;
 use std::collections::HashMap;
 use url::Url;
 
@@ -341,6 +357,45 @@ impl Client {
 
         Ok(collected_res)
     }
+
+    /// POSTS a body to an api endpoint
+    /// The expected return is the object was created
+    /// If an error occurs (api level, not http level) it will return an error message
+    ///
+    /// # Arguments
+    ///
+    /// - `path` - the api path you want to retrieve (example `/service/info`)
+    /// - `body` - the body of the post (see api docs for details). formated as json
+    ///
+    /// # Example
+    /// see main docs
+    /// ```
+    pub fn post(&self, path: &str, body: String) -> Result<Value> {
+        let res = reqwest::blocking::Client::new()
+            .post(&self.gen_api_url(path))
+            .header("Authorization", &self.gen_basic_auth())
+            .header("Content-Type", "application/json")
+            .header("clientid", self.client_id.to_owned())
+            .header("pagination-type", "forward-only")
+            .body(body)
+            .send()
+            .unwrap()
+            .text()
+            .unwrap();
+
+        let v: Value = serde_json::from_str(&res)?;
+
+        match &v["errors"].as_array() {
+            Some(_e) => Err(anyhow!("we got some errors: {:?}", &v["errors"].as_array())),
+            None => {
+                // Sometimes 'errors' is null but there is a message
+                match &v["message"].as_str() {
+                    Some(_e) => Err(anyhow!("we got some errors: {:?}", &v["message"].as_str())),
+                    None => Ok(v),
+                }
+            }
+        }
+    }
 }
 
 // *** Private Functions ***
@@ -371,6 +426,7 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 mod tests {
     use super::*;
     use dotenv::dotenv;
+    use serde_json::json;
 
     fn testing_client() -> Client {
         dotenv().ok();
@@ -444,6 +500,37 @@ mod tests {
         assert_eq!(&zach["adminFlag"], true);
         assert_eq!(&zach["dailyCapacity"], 8.0);
         assert_eq!(&zach["identifier"], "ZPeters");
+    }
+
+    #[test]
+    fn test_basic_post() {
+        let body = json!({
+            "name": "test from rust cwmanage",
+            "assignTo": {
+                "id": 149,
+            }
+        })
+        .to_string();
+
+        let result = testing_client().post("/sales/activities", body);
+        assert!(!result.is_err());
+    }
+
+    #[test]
+    fn test_project_post_error() {
+        let body = json!({}).to_string();
+
+        let result = testing_client().post("/project/projects/1/notes", body);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_basic_post_error() {
+        let body = json!({"name": "test from rust cwmanage"}).to_string();
+
+        let result = testing_client().post("/sales/activities", body);
+        dbg!(&result);
+        assert!(result.is_err());
     }
 
     #[test]
