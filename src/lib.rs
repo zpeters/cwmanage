@@ -7,7 +7,7 @@
 //! In some cases, (/system/info for example) it does not return a list, in this case use [Client.get_single].
 //! Consult the api documentation (above) for more details.
 //!
-//! # Basic usage
+//! # Get Example
 //!
 //! Basic client with default api_uri, codebase, and api version
 //! ```
@@ -66,6 +66,23 @@
 //! let result = client.post("/system/members", body);
 //! ```
 //!
+//! # Patch Example
+//! ```
+//! use cwmanage::Client;
+//! use serde_json::json;
+//! use dotenv::dotenv;
+//! dotenv().ok();
+//! let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+//! let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+//! let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+//! let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+//! let client = Client::new(company_id, public_key, private_key, client_id).build();
+//! let op = PatchOp::Replace;
+//! let path = "name";
+//! let value = "test_basic_patch_replace";
+//! let result = testing_client().patch("/sales/activities/100", op, path, value);
+//! ```
+//!
 //! # Query examples
 //! See the connectwise api for further details
 //!
@@ -73,8 +90,10 @@
 //! - Only get the id field `[("fields", "id")]`
 //! - Also apply some conditions `[("fields", "id"), ("conditions", "name LIKE '%foo%'")]`
 use anyhow::{anyhow, Result};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::string::ToString;
+use strum_macros;
 use url::Url;
 
 /// Default api url.  NA for north america.  Adjust to your cloud instance or local instance. See [Client] for how to customize
@@ -88,6 +107,20 @@ pub const DEFAULT_API_CODEBASE: &str = "v4_6_release";
 /// I cannot find documentation on this , but since it is a number
 /// it is customizable. See [Client] for how to customize
 pub const DEFAULT_API_VERSION: &str = "3.0";
+
+/// Our possible patch operations
+#[derive(Debug, strum_macros::ToString)]
+pub enum PatchOp {
+    /// Add to a non-existing field
+    #[strum(serialize = "add")]
+    Add,
+    /// Replace existing value with the provided one
+    #[strum(serialize = "replace")]
+    Replace,
+    /// Remove the specified viewed
+    #[strum(serialize = "remove")]
+    Remove,
+}
 
 /// Connectwise client.  Initinitialize with [Client::new].  Use [Client::api_url],
 /// [Client::api_version] and [Client::codebase] to customize.  The finalize with [Client::build]
@@ -369,7 +402,7 @@ impl Client {
     ///
     /// # Example
     /// see main docs
-    /// ```
+    ///
     pub fn post(&self, path: &str, body: String) -> Result<Value> {
         let res = reqwest::blocking::Client::new()
             .post(&self.gen_api_url(path))
@@ -394,6 +427,47 @@ impl Client {
                     None => Ok(v),
                 }
             }
+        }
+    }
+
+    /// Patch (aka updated) to provided `patch_path` (field) on the object specified by path
+    /// The expected return is the new version of the object that was modified
+    /// If an error occurs (api level, not http level) it will return an error message
+    ///
+    /// # Arguments
+    ///
+    /// - `path` - the api path you want to retrieve (example `/service/info`)
+    /// - `op` - one fo the allowed `PatchOp` values (Add | Replace | Remove)
+    /// - `path_path` - field you want to modify (example `summmary`, `member/id`)
+    /// - `value` - the value you want to update (example `New Name`)
+    ///
+    /// # Example
+    /// see main docs
+    pub fn patch(&self, path: &str, op: PatchOp, patch_path: &str, value: &str) -> Result<Value> {
+        // create the body - please note the [] square brackets
+        let body = json!([{
+            "op": op.to_string(),
+            "path": patch_path,
+            "value": value,
+        }])
+        .to_string();
+
+        let res = reqwest::blocking::Client::new()
+            .patch(&self.gen_api_url(path))
+            .header("Authorization", &self.gen_basic_auth())
+            .header("Content-Type", "application/json")
+            .header("clientid", self.client_id.to_owned())
+            .header("pagination-type", "forward-only")
+            .body(body)
+            .send()
+            .unwrap()
+            .text()
+            .unwrap();
+        let v: Value = serde_json::from_str(&res)?;
+
+        match &v["message"].as_str() {
+            Some(_e) => Err(anyhow!("we got some errors: {:?}", &v["errors"].as_array())),
+            None => Ok(v),
         }
     }
 }
@@ -619,5 +693,36 @@ mod tests {
 
         assert_eq!(result.api_url, "api".to_string());
         assert_eq!(result.codebase, "codebase".to_string());
+    }
+
+    #[test]
+    /// This activity/name already exists so an add should fail
+    fn test_basic_patch_add_should_fail() {
+        let op = PatchOp::Add;
+        let path = "name";
+        let value = "test_basic_patch_add";
+
+        let result = testing_client().patch("/sales/activities/99", op, path, value);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_basic_patch_replace() {
+        let op = PatchOp::Replace;
+        let path = "name";
+        let value = "test_basic_patch_replace";
+
+        let result = testing_client().patch("/sales/activities/100", op, path, value);
+        assert!(!result.is_err());
+    }
+
+    #[test]
+    fn test_basic_patch_error() {
+        let op = PatchOp::Add;
+        let path = "summary";
+        let value = "test_basic_patch_error_test";
+
+        let result = testing_client().patch("/sales/activities/123", op, path, value);
+        assert!(result.is_err());
     }
 }
