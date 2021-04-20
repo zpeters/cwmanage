@@ -443,7 +443,7 @@ impl Client {
     ///
     /// # Example
     /// see main docs
-    pub fn patch(&self, path: &str, op: PatchOp, patch_path: &str, value: &str) -> Result<Value> {
+    pub fn patch(&self, path: &str, op: PatchOp, patch_path: &str, value: serde_json::Value) -> Result<Value> {
         // create the body - please note the [] square brackets
         let body = json!([{
             "op": op.to_string(),
@@ -463,10 +463,11 @@ impl Client {
             .unwrap()
             .text()
             .unwrap();
+
         let v: Value = serde_json::from_str(&res)?;
 
         match &v["message"].as_str() {
-            Some(_e) => Err(anyhow!("we got some errors: {:?}", &v["errors"].as_array())),
+            Some(_e) => Err(anyhow!("we got some errors: {:?}", &v)),
             None => Ok(v),
         }
     }
