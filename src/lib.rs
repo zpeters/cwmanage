@@ -128,7 +128,7 @@ pub enum PatchOp {
 /// * `public_key` is obtained by creating an api member with keys
 /// * `private_key` is obtained by creating an api member with keys
 /// * the `client_id` is generated <https://developer.connectwise.com/ClientID>
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Client {
     company_id: String,
     public_key: String,
@@ -443,7 +443,13 @@ impl Client {
     ///
     /// # Example
     /// see main docs
-    pub fn patch(&self, path: &str, op: PatchOp, patch_path: &str, value: serde_json::Value) -> Result<Value> {
+    pub fn patch(
+        &self,
+        path: &str,
+        op: PatchOp,
+        patch_path: &str,
+        value: serde_json::Value,
+    ) -> Result<Value> {
         // create the body - please note the [] square brackets
         let body = json!([{
             "op": op.to_string(),
