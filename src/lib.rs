@@ -277,14 +277,137 @@ impl Client {
             .header("clientid", self.client_id.to_owned())
             .header("pagination-type", "forward-only")
             .query(&query)
-            .send()
-            .unwrap()
-            .text()
-            .unwrap();
+            .send()?
+            .text()?;
 
-        let v: Value = serde_json::from_str(&res).unwrap();
+        let v: Value = serde_json::from_str(&res)?;
         Ok(v)
     }
+
+    /// This will get a custom field Value, it helps with some of the juggleing of all of the
+    /// custom fields that get returned
+    ///
+    /// # Arguments
+    ///
+    /// - `path` - The 'path" is the exact url to the object (`/projects/project/123`, etc).
+    /// - `field` - The field we want to update (also known as the "Caption")
+    ///
+    /// # Example
+    /// ## getting a field
+    /// ```
+    /// use cwmanage::Client;
+    /// use serde_json::json;
+    ///
+    /// // this example is using dotenv to load our settings from
+    /// // the environment, you could also specify this manually
+    /// use dotenv::dotenv;
+    /// dotenv().ok();
+    /// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+    /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+    /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+    /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
+    ///
+    /// let path = "/project/projects/1799";
+    /// let field_name = "EPL";
+    /// let expected = Some(json!(false));
+    ///
+    /// let result = client.get_custom_field(path, field_name);
+    ///
+    /// assert_eq!(result.unwrap(), expected);
+    /// ```
+    pub fn get_custom_field(&self, path: &str, field: &str) -> Result<Option<Value>> {
+        let query = &[("fields", "customFields")];
+        let res = &self.get_single(path, query)?;
+
+        let custom_fields = res
+            .get("customFields")
+            .ok_or(anyhow!("cannot get customFields"))?
+            .as_array()
+            .ok_or(anyhow!("cannot parse as array"))?;
+
+        let mut found_field: Option<Value> = None;
+        for f in custom_fields.iter() {
+            if &f["caption"].as_str().unwrap() == &field {
+                found_field = Some(f["value"].clone());
+            }
+        }
+
+        Ok(found_field)
+    }
+
+    fn get_custom_field_id(&self, path: &str, field: &str) -> Result<i64> {
+        let query = &[("fields", "customFields")];
+        let res = &self.get_single(path, query)?;
+
+        let custom_fields = res
+            .get("customFields")
+            .ok_or(anyhow!("cannot get customFields"))?
+            .as_array()
+            .ok_or(anyhow!("cannot convert custom fires from to array"))?;
+
+        let mut id: i64 = 0;
+        for f in custom_fields.iter() {
+            if &f["caption"]
+                .as_str()
+                .ok_or(anyhow!("cannot convert caption to string"))?
+                == &field
+            {
+                id = f["id"]
+                    .as_i64()
+                    .ok_or(anyhow!("cannot convert id to i64"))?;
+            }
+        }
+
+        match id {
+            0 => Err(anyhow!("couldn't get id")),
+            _any => Ok(id),
+        }
+    }
+
+    /// This will Patch a custom field, this abstracts out some of the operations.
+    ///
+    /// # Arguments
+    ///
+    /// - `path` - The 'path" is the exact url to the object (`/projects/project/123`, etc).
+    /// - `field` - The field we want to update (also known as the "Caption")
+    /// - `value` - The value we want to update it to.  This is sent as a string and then
+    ///             parsed to the appropriate datatype (ie it is sent as json). Example
+    ///              "1234" for `1234`, "true" for `true`, etc
+    ///
+    /// # Example
+    /// ## updating a field
+    /// ```
+    /// use cwmanage::Client;
+    ///
+    /// // this example is using dotenv to load our settings from
+    /// // the environment, you could also specify this manually
+    /// use dotenv::dotenv;
+    /// dotenv().ok();
+    /// let company_id: String = dotenv::var("CWMANAGE_COMPANY_ID").unwrap();
+    /// let public_key: String = dotenv::var("CWMANAGE_PUBLIC_KEY").unwrap();
+    /// let private_key: String = dotenv::var("CWMANAGE_PRIVATE_KEY").unwrap();
+    /// let client_id: String = dotenv::var("CWMANAGE_CLIENT_ID").unwrap();
+    /// let client = Client::new(company_id, public_key, private_key, client_id).build();
+    ///
+    /// let path = "/project/projects/1799";
+    /// let field_name = "EPL";
+    /// let field_value = "false";
+    /// let expected = ();
+    ///
+    /// let result = client.patch_custom_field(path, field_name, field_value);
+    ///
+    /// assert_eq!(result.unwrap(), expected);
+    /// ```
+    pub fn patch_custom_field(&self, path: &str, field: &str, value: &str) -> Result<()> {
+        let field_id = &self.get_custom_field_id(path, field)?;
+        let value = json!([{ "id": field_id, "value": value}]);
+        match &self.patch(path, PatchOp::Replace, "customFields", value) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow!("could not patch field: {:?}", e)),
+        }
+    }
+
     /// GETs a path from the connectwise api.  `get` will return *all* results so make sure you
     /// set your `query` with the appropriate conditions. This follows the api pagination so, again,
     /// *all* results will be returned  For example `/service/tickets` will
@@ -366,8 +489,7 @@ impl Client {
                 .header("pagination-type", "forward-only")
                 .query(&[("pageid", &page)])
                 .query(&query)
-                .send()
-                .unwrap();
+                .send()?;
 
             let hdrs = res.headers();
 
@@ -376,15 +498,20 @@ impl Client {
                     if link.is_empty() {
                         false
                     } else {
-                        page = get_page_id(hdrs);
-                        true
+                        match get_page_id(hdrs) {
+                            Some(p) => {
+                                page = p;
+                                true
+                            }
+                            None => false,
+                        }
                     }
                 }
                 None => false,
             };
 
-            let body = res.text().unwrap();
-            let mut v: Vec<Value> = serde_json::from_str(&body).unwrap();
+            let body = res.text()?;
+            let mut v: Vec<Value> = serde_json::from_str(&body)?;
             collected_res.append(&mut v);
         }
 
@@ -411,10 +538,8 @@ impl Client {
             .header("clientid", self.client_id.to_owned())
             .header("pagination-type", "forward-only")
             .body(body)
-            .send()
-            .unwrap()
-            .text()
-            .unwrap();
+            .send()?
+            .text()?;
 
         let v: Value = serde_json::from_str(&res)?;
 
@@ -465,10 +590,8 @@ impl Client {
             .header("clientid", self.client_id.to_owned())
             .header("pagination-type", "forward-only")
             .body(body)
-            .send()
-            .unwrap()
-            .text()
-            .unwrap();
+            .send()?
+            .text()?;
 
         let v: Value = serde_json::from_str(&res)?;
 
@@ -480,7 +603,7 @@ impl Client {
 }
 
 // *** Private Functions ***
-fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
+fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> Option<String> {
     let url = hdrs
         .get("link")
         .unwrap()
@@ -493,12 +616,12 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
         .split('>')
         .collect::<Vec<&str>>()[0];
 
-    let parsed_url = Url::parse(url).unwrap();
+    let parsed_url = Url::parse(url).ok()?;
     let hash_query: HashMap<_, _> = parsed_url.query_pairs().into_owned().collect();
 
     match hash_query.contains_key("pageId") {
-        false => "".to_string(),
-        true => hash_query["pageId"].to_string(),
+        false => None,
+        true => Some(hash_query["pageId"].to_string()),
     }
 }
 
@@ -507,6 +630,7 @@ fn get_page_id(hdrs: &reqwest::header::HeaderMap) -> String {
 mod tests {
     use super::*;
     use dotenv::dotenv;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     fn testing_client() -> Client {
@@ -610,7 +734,6 @@ mod tests {
         let body = json!({"name": "test from rust cwmanage"}).to_string();
 
         let result = testing_client().post("/sales/activities", body);
-        dbg!(&result);
         assert!(result.is_err());
     }
 
@@ -730,6 +853,89 @@ mod tests {
         let value = json!("test_basic_patch_error_test");
 
         let result = testing_client().patch("/sales/activities/123", op, path, value);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_custom_field_bad_field_name() {
+        let path = "/project/projects/4";
+        let field_name = "A Fake Field";
+        let expected = None;
+
+        let result = testing_client().get_custom_field(path, field_name);
+
+        assert_eq!(result.unwrap(), expected);
+    }
+    #[test]
+    fn test_get_custom_field_something_set() {
+        let path = "/project/projects/1799";
+        let field_name = "E-rate";
+        let expected = Some(json!(false));
+
+        let result = testing_client().get_custom_field(path, field_name);
+
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_get_custom_field_id() {
+        let path = "/project/projects/1799";
+        let field_name = "WaitReason";
+        let expected: i64 = 67;
+
+        let result = testing_client().get_custom_field_id(path, field_name);
+
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_get_custom_field_id_missing() {
+        let path = "/project/projects/1799";
+        let field_name = "A Fake Thing";
+
+        let result = testing_client().get_custom_field_id(path, field_name);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_custom_field_something_else_set() {
+        let path = "/project/projects/1799";
+        let field_name = "WaitReason";
+        let expected = Some(json!("Something Else"));
+
+        let result = testing_client().get_custom_field(path, field_name);
+
+        assert_eq!(result.unwrap(), expected);
+    }
+    #[test]
+    fn test_update_custom_field_string() {
+        let path = "/project/projects/1799";
+        let field_name = "WaitReason";
+        let field_value = "Something Else";
+        let expected = ();
+
+        let result = testing_client().patch_custom_field(path, field_name, field_value);
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_update_custom_field_bool() {
+        let path = "/project/projects/1799";
+        let field_name = "EPL";
+        let field_value = "false";
+        let expected = ();
+
+        let result = testing_client().patch_custom_field(path, field_name, field_value);
+        assert_eq!(result.unwrap(), expected);
+    }
+    #[test]
+    fn test_update_custom_field_doesnt_exist() {
+        let path = "/project/projects/1799";
+        let field_name = "A Fake Field";
+        let field_value = "false";
+
+        let result = testing_client().patch_custom_field(path, field_name, field_value);
         assert!(result.is_err());
     }
 }
