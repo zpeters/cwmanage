@@ -68,7 +68,7 @@
 //!
 //! # Patch Example
 //! ```
-//! use cwmanage::Client;
+//! use cwmanage::{Client, PatchOp};
 //! use serde_json::json;
 //! use dotenv::dotenv;
 //! dotenv().ok();
@@ -79,8 +79,8 @@
 //! let client = Client::new(company_id, public_key, private_key, client_id).build();
 //! let op = PatchOp::Replace;
 //! let path = "name";
-//! let value = "test_basic_patch_replace";
-//! let result = testing_client().patch("/sales/activities/100", op, path, value);
+//! let value = json!("test_basic_patch_replace");
+//! let result = client.patch("/sales/activities/100", op, path, value);
 //! ```
 //!
 //! # Query examples
@@ -707,7 +707,7 @@ mod tests {
     fn test_basic_patch_add_should_fail() {
         let op = PatchOp::Add;
         let path = "name";
-        let value = "test_basic_patch_add";
+        let value = json!("test_basic_patch_add");
 
         let result = testing_client().patch("/sales/activities/99", op, path, value);
         assert!(result.is_err());
@@ -717,7 +717,7 @@ mod tests {
     fn test_basic_patch_replace() {
         let op = PatchOp::Replace;
         let path = "name";
-        let value = "test_basic_patch_replace";
+        let value = json!("test_basic_patch_replace");
 
         let result = testing_client().patch("/sales/activities/100", op, path, value);
         assert!(!result.is_err());
@@ -727,7 +727,7 @@ mod tests {
     fn test_basic_patch_error() {
         let op = PatchOp::Add;
         let path = "summary";
-        let value = "test_basic_patch_error_test";
+        let value = json!("test_basic_patch_error_test");
 
         let result = testing_client().patch("/sales/activities/123", op, path, value);
         assert!(result.is_err());
