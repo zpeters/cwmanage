@@ -6,7 +6,7 @@
 
 on: [push, pull_request]
 
-name: build
+name: check_test_fmt_clippy
 
 jobs:
   check:
