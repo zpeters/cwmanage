@@ -26,4 +26,4 @@ url = "2.2.2"
 
 [dev-dependencies]
 dotenv = "0.15.0"
-pretty_assertions = "0.7.2"
+pretty_assertions = "1.2.1"
